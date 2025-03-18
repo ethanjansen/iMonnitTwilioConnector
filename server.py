@@ -2,15 +2,17 @@
 # By: Ethan Jansen
 # Websocket server for iMonnit--sends text with Twilio. Requires Basic Authorization.
 
-from flask import Flask, request
-from werkzeug.exceptions import ServiceUnavailable, InternalServerError
+from flask import Flask, request, jsonify
+from werkzeug.exceptions import ServiceUnavailable, InternalServerError, BadRequest
 import logging
 from functools import wraps
 from time import sleep  # testing
 from settings import AppName, ImonnitTwilioConnectorConfig
+from twilioClient import TwilioSMSClient
 
 # Register app
 app = Flask(AppName)
+twilioClient = TwilioSMSClient()
 
 
 # Helper functions
@@ -41,17 +43,65 @@ def webhook():
     # Log
     app.logger.info(f"Data received: {request.json}")
 
-    # Do Stuff - Example
+    """
+    Expected iMonnit Rule Webhook Contents:
+    {
+        subject: Subject/Title of Rule
+        reading: Reading or event that triggered the Rule
+        rule: Name of Rule
+        date: Date the rule triggered
+        time: Time the rule triggered
+        readingDate: Date of data message (if rule triggered by sensor reading)
+        readingTime: Time of data message (if rule triggered by sensor reading)
+        originalReadingDate: Date of first data message that triggered the rule (if rule triggered by sensor reading)
+        originalReadingTime: Time of first data message that triggered the rule (if rule triggered by sensor reading)
+        acknowledgeURL: URL that will acknowledge the rule if called (Log in requried)
+        parentAccount: Name of the reseller or immediate parent in corporate hierarchy
+        deviceID: The iD of the device that triggered the rule
+        name: Name of the device that triggered the rule
+        networkID: The ID of the network that the device triggerd the rule belongs to
+        network: Network that the device triggering the rule belongs to
+        accountID: The ID of the account the rule belongs to
+        accountNumber: Account number of the account the rule belongs to
+        companyName: Company name of the account the rule belongs to
+    }
+    """
     data = request.json
 
-    if data["key1"] == "good":
-        pass
-    elif data["key1"] == "delayed":
-        sleep(30)
-    else:
-        raise ServiceUnavailable(description="Twilio Throttling Error")
+    # Optionally add to database [TODO]
 
-    # Return success
+    # If there are no sms recipients, do nothing
+    if twilioClient.recipientListLength == 0:
+        app.logger.info("No SMS Recipients")
+        return ("Success", 200)
+
+    # Send stuff with Twilio
+    body = "Error: Received bad data from iMonnit Webhook!"
+    if "rule" in data:
+        rule = data["rule"]
+        name = data.get("name", "name")
+        deviceID = data.get("deviceID", "deviceID")
+        time = data.get("time", "time")
+        date = data.get("date", "date")
+        reading = data.get("reading", "reading")
+        ack = data.get("acknowledgeURL", "acknowledgeURL")
+
+        body = f"""{rule} triggered by {name} ({deviceID})
+Time: {time} {date}
+Reading: {reading}
+Acknowledge: {ack}"""
+    else:
+        twilioClient.send(body)
+        app.logger.warning("Received bad data from iMonnit Webhook")
+        raise BadRequest(description="Unexpected data")
+
+    results = twilioClient.send(body)
+
+    if len(results) == twilioClient.recipientListLength:
+        # Nothing was sent - likely throttled
+        raise ServiceUnavailable(description="\n".join(f"Recipient={x[0]}, Error={x[1]} {x[2]}" for x in results))
+
+    # Return success - This atLEAST ONE sms was sent successfully
     return ("Success", 200)
 
 

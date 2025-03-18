@@ -49,4 +49,5 @@ class TwilioConfig:
         errorHandler(e)
 
     # Optional Settings
-    Recipients = environ.get("TWILIO_PHONE_RCPTS", "").split(",")
+    Recipients = list(filter(None, environ.get("TWILIO_PHONE_RCPTS", "").split(",")))
+    Debug = "TWILIO_DEBUG" in environ  # INFO if set, WARN if unset
