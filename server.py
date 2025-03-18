@@ -6,18 +6,18 @@ from flask import Flask, request
 from werkzeug.exceptions import ServiceUnavailable, InternalServerError
 import logging
 from functools import wraps
-from os import environ
 from time import sleep  # testing
+from settings import AppName, ImonnitTwilioConnectorConfig
 
 # Register app
-app = Flask(__name__)
+app = Flask(AppName)
 
 
 # Helper functions
 # Authentication check
 def checkAuth(username, password):
-    userCheck = username == environ.get("IMONNIT_TWILIO_CONNECTOR_WH_USER", "Hello")
-    passCheck = password == environ.get("IMONNIT_TWILIO_CONNECTOR_WH_PASS", "World")
+    userCheck = username == ImonnitTwilioConnectorConfig.WebhookUser
+    passCheck = password == ImonnitTwilioConnectorConfig.WebhookPassword
 
     return userCheck and passCheck
 
@@ -58,4 +58,4 @@ def webhook():
 # Run
 if __name__ == "__main__":
     app.logger.setLevel(logging.INFO)
-    app.run(host="0.0.0.0", port=environ.get("IMONNIT_TWILIO_CONNECTOR_PORT", 5080))
+    app.run(host="0.0.0.0", port=ImonnitTwilioConnectorConfig.ServerPort)
