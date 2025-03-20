@@ -6,7 +6,6 @@ from flask import Flask, request, jsonify
 from werkzeug.exceptions import ServiceUnavailable, InternalServerError, BadRequest
 import logging
 from functools import wraps
-from time import sleep  # testing
 from settings import AppName, ImonnitTwilioConnectorConfig
 from twilioClient import TwilioSMSClient
 
@@ -73,7 +72,7 @@ def webhook():
     # If there are no sms recipients, do nothing
     if twilioClient.recipientListLength == 0:
         app.logger.info("No SMS Recipients")
-        return ("Success", 200)
+        return ("", 200)
 
     # Send stuff with Twilio
     body = "Error: Received bad data from iMonnit Webhook!"
