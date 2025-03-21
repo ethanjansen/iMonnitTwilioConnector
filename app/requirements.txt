@@ -12,8 +12,10 @@ frozenlist==1.5.0
 idna==3.10
 itsdangerous==2.2.0
 Jinja2==3.1.6
+mariadb==1.1.12
 MarkupSafe==3.0.2
 multidict==6.2.0
+packaging==24.2
 propcache==0.3.0
 PyJWT==2.10.1
 requests==2.32.3
