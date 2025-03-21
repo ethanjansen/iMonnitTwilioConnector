@@ -1,0 +1,35 @@
+name: imonnitTwilioConnector
+
+x-global-env: &global-env
+  MARIADB_USER: userWhatever            # ChangeMe
+  MARIADB_PASSWORD: userWhateverPass    # ChangeMe
+  MARIADB_DATABASE: dbTest              # ChangeMe
+  MYSQL_TCP_PORT: 3306
+
+services:
+  db:
+    container_name: imonnitTwilioConnector-db
+    image: mariadb:11.4.5-noble
+    environment:
+      <<: *global-env
+      MARIADB_ROOT_PASSWORD: rootPassWhatever   # ChangeMe
+      MARIADB_ROOT_HOST: localhost
+    expose:
+      - "3306/tcp"
+#   ports:      # Uncomment if external access is desired
+#     - "3306/tcp"
+    volumes:
+      - ./db/data:/var/lib/mysql:Z
+    configs:
+      - source: dbInit
+        target: /docker-entrypoint-initdb.d/dbInit.sql
+      - source: dbConfig
+        target: /etc/mysql/conf.d/dbConfig.cnf
+    restart: on-failure:3
+
+configs:
+  dbInit:
+    file: ./db/dbInit.sql
+  dbConfig:
+    file: ./db/dbConfig.cnf
+

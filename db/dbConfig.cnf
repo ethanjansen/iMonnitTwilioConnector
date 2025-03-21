@@ -1,0 +1,4 @@
+[mariadb]
+local-infile=0
+event_scheduler=1
+port=0
