@@ -2,8 +2,6 @@ from typing import List, Tuple, TypeAlias
 from typing_extensions import Annotated
 from pydantic import BaseModel, Field, computed_field, BeforeValidator, ValidationError
 from datetime import datetime
-# testing
-from datetime import timezone, timedelta
 
 
 def _emptyStrToNone(s: str | None) -> None:
@@ -58,7 +56,7 @@ class Message(BaseModel):  # this may not match keys of callback
     id: NullableUnsignedInt = None
     eventId: NullableUnsignedInt = None
     messageId: EmptyStrToNone | Annotated[str, Field(min_length=34, max_length=34)] = None
-    recipient: Annotated[str, Field(min_length=11, max_length=11)]
+    recipient: Annotated[str, Field(min_length=12, max_length=30)]
     status: NullableStr = None
     sentDT: NullableFancyDTMessageSent = None
     deliveredDT: NullableFancyDTMessageDelivered = None
@@ -294,38 +292,38 @@ if __name__ == '__main__':
 
     exceptionThrown = False
     try:
-        Message(recipient="123456789000")
+        Message(recipient="whatsapp:+123456789012345678900")
     except ValidationError:
         exceptionThrown = True
     assert exceptionThrown
 
     # valid message
-    SimpleMsg = Message(recipient="+1234567890")
-    assert SimpleMsg.recipient == "+1234567890"
+    SimpleMsg = Message(recipient="+11234567890")
+    assert SimpleMsg.recipient == "+11234567890"
     assert SimpleMsg.messageId is None
 
     # message: empty messageId
-    EmptyMessageIdMsg = Message(recipient="+1234567890",
+    EmptyMessageIdMsg = Message(recipient="+11234567890",
                                 messageId="")
-    assert EmptyMessageIdMsg.recipient == "+1234567890"
+    assert EmptyMessageIdMsg.recipient == "+11234567890"
     assert EmptyMessageIdMsg.messageId is None
 
     # message: invalid messageId length
     exceptionThrown = False
     try:
-        BadMessageIdMsg = Message(recipient="+1234567890",
+        BadMessageIdMsg = Message(recipient="+11234567890",
                                   messageId="sm1234567890")
     except ValidationError:
         exceptionThrown = True
     assert exceptionThrown
 
     # message: valid messageId
-    GoodMessageIdMsg = Message(recipient="+1234567890",
+    GoodMessageIdMsg = Message(recipient="+11234567890",
                                messageId="sm0123456789abcdefghijklmnopqrstuv")
     assert GoodMessageIdMsg.messageId == "sm0123456789abcdefghijklmnopqrstuv"
 
     # message: nullable types
-    NullableMsg = Message(recipient="+1234567890",
+    NullableMsg = Message(recipient="+11234567890",
                           id="",
                           status="",
                           sentDT="",
@@ -341,7 +339,7 @@ if __name__ == '__main__':
 
     # message: type conversion
     testDT = datetime(2025, 3, 28, 14, 25)
-    TypeConversionMsg = Message(recipient="+1234567890",
+    TypeConversionMsg = Message(recipient="+11234567890",
                                 id="123",
                                 sentDT="Fri, 28 Mar 2025 06:25:00 -0800",
                                 deliveredDT="2503281425",
@@ -354,7 +352,7 @@ if __name__ == '__main__':
     assert TypeConversionMsg.created == testDT
 
     # message: native DT's
-    NativeDTMsg = Message(recipient="+1234567890",
+    NativeDTMsg = Message(recipient="+11234567890",
                           sentDT=testDT,
                           deliveredDT=testDT,
                           created=testDT)
@@ -408,7 +406,7 @@ if __name__ == '__main__':
         "id": None,
         "eventId": 1,
         "messageId": "SM0123456789abcdefghijklmnopqrstuv",
-        "recipient": "+1234567890",
+        "recipient": "+11234567890",
         "status": "queued",
         "sentDT": None,
         "deliveredDT": None,
@@ -421,7 +419,7 @@ if __name__ == '__main__':
         "id": None,
         "eventId": 1,
         "messageId": None,
-        "recipient": "+1234567891",
+        "recipient": "+11234567891",
         "status": "failed",
         "sentDT": None,
         "deliveredDT": None,
@@ -434,7 +432,7 @@ if __name__ == '__main__':
         "id": None,
         "eventId": 1,
         "messageId": "SM0123456789abcdefghijklmnopqrstuv",
-        "recipient": "+1234567892",
+        "recipient": "+11234567892",
         "status": "delivered",
         "sentDT": datetime(2025, 3, 28, 14, 25),
         "deliveredDT": datetime(2025, 3, 28, 14, 26),
@@ -461,7 +459,7 @@ if __name__ == '__main__':
                           "Example Company")
     testOutputMsgsSql = [(1,
                           "SM0123456789abcdefghijklmnopqrstuv",
-                          "+1234567890",
+                          "+11234567890",
                           "queued",
                           None,
                           None,
@@ -469,7 +467,7 @@ if __name__ == '__main__':
                           None),
                          (1,
                           None,
-                          "+1234567891",
+                          "+11234567891",
                           "failed",
                           None,
                           None,
@@ -477,7 +475,7 @@ if __name__ == '__main__':
                           "Error sending SMS..."),
                          (1,
                           "SM0123456789abcdefghijklmnopqrstuv",
-                          "+1234567892",
+                          "+11234567892",
                           "delivered",
                           datetime(2025, 3, 28, 14, 25),
                           datetime(2025, 3, 28, 14, 26),
@@ -493,20 +491,20 @@ if __name__ == '__main__':
 
     TestEvent = Event(**testInputEvent)
     # good send
-    TestEvent.messages.append(Message(recipient="+1234567890",
+    TestEvent.messages.append(Message(recipient="+11234567890",
                                       messageId="SM0123456789abcdefghijklmnopqrstuv",
                                       status="queued",
                                       errorCode=None,
                                       errorMessage=None))
 
     # bad send
-    TestEvent.messages.append(Message(recipient="+1234567891",
+    TestEvent.messages.append(Message(recipient="+11234567891",
                                       messageId=None,
                                       status="failed",
                                       errorCode=429,
                                       errorMessage="Error sending SMS..."))
     # callback
-    TestEvent.messages.append(Message(recipient="+1234567892",
+    TestEvent.messages.append(Message(recipient="+11234567892",
                                       sentDT="Fri, 28 Mar 2025 06:25:00 -0800",
                                       deliveredDT="2503281426",
                                       messageId="SM0123456789abcdefghijklmnopqrstuv",

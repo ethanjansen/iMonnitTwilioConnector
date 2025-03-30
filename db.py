@@ -175,17 +175,17 @@ if __name__ == "__main__":
     # event with no messages
     assert connector.addEventWithMessages(TestEvent)
 
-    TestEvent.messages.append(Message(recipient="+1234567890",
+    TestEvent.messages.append(Message(recipient="+11234567890",
                                       messageId="SM0123456789abcdefghijklmnopqrstuv",
                                       status="queued",
                                       errorCode=None,
                                       errorMessage=None))
-    TestEvent.messages.append(Message(recipient="+1234567891",
+    TestEvent.messages.append(Message(recipient="+11234567891",
                                       messageId=None,
                                       status="failed",
                                       errorCode=429,
                                       errorMessage="Error sending SMS..."))
-    TestEvent.messages.append(Message(recipient="+1234567892",
+    TestEvent.messages.append(Message(recipient="+11234567892",
                                       sentDT="Fri, 28 Mar 2025 06:25:00 -0800",
                                       deliveredDT="2503281426",
                                       messageId="SM0123456789abcdefghijklmnopqrstuv",
@@ -198,7 +198,7 @@ if __name__ == "__main__":
     assert connector.addEventWithMessages(TestEvent)
 
     # update message that doesn't exist
-    failedReturn = connector.updateMessage(Message(recipient="+1234567890",
+    failedReturn = connector.updateMessage(Message(recipient="+11234567890",
                                                    messageId="SM0123456789abcdefghijklm-nonexist",
                                                    sentDT=testEventDT,
                                                    updated=testEventDT,
@@ -206,7 +206,7 @@ if __name__ == "__main__":
     assert not failedReturn
 
     # update message -- unique messageId (real world)
-    TestMessage = Message(recipient="+1234567890",
+    TestMessage = Message(recipient="+11234567890",
                           messageId="SM0123456789abcdefghijklmno-unique",
                           status="queued",
                           errorCode=None,
