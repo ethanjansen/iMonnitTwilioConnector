@@ -150,7 +150,7 @@ if __name__ == "__main__":
     if not connector.testConnection():
         sys.exit(2)
 
-    # test data -- TODO: test failing operations
+    # test data
     testEventDT = datetime(2022, 4, 28, 14, 21)
     testInputEvent = {
         "subject": "Battery below 50%!",
