@@ -21,7 +21,7 @@ class _customDTValidator:
         if isinstance(dt, datetime):
             return dt
         elif isinstance(dt, str):
-            return datetime.strptime(dt, self.formatString)
+            return datetime.strptime(dt, self.formatString).astimezone().replace(tzinfo=None)
         raise TypeError("dt is not string or datetime")
 
 
@@ -331,7 +331,7 @@ if __name__ == '__main__':
                                 created="2025-03-28T14:25")
     assert TypeConversionMsg.id == 123
     assert TypeConversionMsg.errorCode == 123
-    assert TypeConversionMsg.sentDT.astimezone().replace(tzinfo=None) == testDT
+    assert TypeConversionMsg.sentDT == testDT
     assert TypeConversionMsg.deliveredDT == testDT
     assert TypeConversionMsg.created == testDT
 
@@ -418,12 +418,12 @@ if __name__ == '__main__':
         "messageId": "SM0123456789abcdefghijklmnopqrstuv",
         "recipient": "+1234567892",
         "status": "delivered",
-        "sentDT": datetime(2025, 3, 28, 6, 25, tzinfo=timezone(timedelta(hours=-8))),
-        "deliveredDT": datetime(2025, 3, 28, 6, 26),
+        "sentDT": datetime(2025, 3, 28, 14, 25),
+        "deliveredDT": datetime(2025, 3, 28, 14, 26),
         "errorCode": None,
         "errorMessage": None,
         "created": None,
-        "updated": testDT
+        "updated": testEventDT
         }
     testOutputEventSql = ("Battery below 50%",
                           "Battery below 50%!",
@@ -461,8 +461,8 @@ if __name__ == '__main__':
                           "SM0123456789abcdefghijklmnopqrstuv",
                           "+1234567892",
                           "delivered",
-                          datetime(2025, 3, 28, 6, 25, tzinfo=timezone(timedelta(hours=-8))),
-                          datetime(2025, 3, 28, 6, 26),
+                          datetime(2025, 3, 28, 14, 25),
+                          datetime(2025, 3, 28, 14, 26),
                           None,
                           None)]
 
@@ -483,12 +483,12 @@ if __name__ == '__main__':
     # callback
     TestEvent.messages.append(Message(recipient="+1234567892",
                                       sentDT="Fri, 28 Mar 2025 06:25:00 -0800",
-                                      deliveredDT="2503280626",
+                                      deliveredDT="2503281426",
                                       messageId="SM0123456789abcdefghijklmnopqrstuv",
                                       status="delivered",
                                       errorCode=None,
                                       errorMessage=None,
-                                      updated=testDT))
+                                      updated=testEventDT))
 
     TestEvent.setAllEventId(1)
 
