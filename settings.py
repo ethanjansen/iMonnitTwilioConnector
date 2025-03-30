@@ -51,3 +51,18 @@ class TwilioConfig:
     # Optional Settings
     Recipients = list(filter(None, environ.get("TWILIO_PHONE_RCPTS", "").split(",")))
     Debug = "TWILIO_DEBUG" in environ  # INFO if set, WARN if unset
+
+
+class DbConfig:
+    # Required Settings
+    Host = "imonnitTwilioConnector-db"
+
+    try:
+        User = environ["MARIADB_USER"]
+        Password = environ["MARIADB_PASSWORD"]
+        Database = environ["MARIADB_DATABASE"]
+    except Exception as e:
+        errorHandler(e)
+
+    # Optional Settings
+    Port = environ.get("MYSQL_TCP_PORT", 3306)
