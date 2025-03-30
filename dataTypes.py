@@ -85,6 +85,24 @@ class Message(BaseModel):  # this may not match keys of callback
                 self.errorCode,
                 self.errorMessage)
 
+    def toSqlUpdate(self) -> Tuple[str | None,
+                                   datetime | None,
+                                   datetime | None,
+                                   int | None,
+                                   str | None,
+                                   datetime | None,
+                                   str | None]:
+        if self.messageId is None:
+            raise ValueError("Cannot update SQL Message with null messageID")
+
+        return (self.status,
+                self.sentDT,
+                self.deliveredDT,
+                self.errorCode,
+                self.errorMessage,
+                self.updated,
+                self.messageId)
+
 
 class Event(BaseModel):
     id: NullableUnsignedInt = None
@@ -465,6 +483,13 @@ if __name__ == '__main__':
                           datetime(2025, 3, 28, 14, 26),
                           None,
                           None)]
+    testOutputMsg3UpdateSql = ("delivered",
+                               datetime(2025, 3, 28, 14, 25),
+                               datetime(2025, 3, 28, 14, 26),
+                               None,
+                               None,
+                               testEventDT,
+                               "SM0123456789abcdefghijklmnopqrstuv")
 
     TestEvent = Event(**testInputEvent)
     # good send
@@ -501,3 +526,12 @@ if __name__ == '__main__':
 
     assert TestEvent.toSqlImport() == testOutputEventSql
     assert TestEvent.toSqlImportMessages() == testOutputMsgsSql
+    assert TestEvent.messages[2].toSqlUpdate() == testOutputMsg3UpdateSql
+
+    # message: test invalid sql update
+    exceptionThrown = False
+    try:
+        TestEvent.messages[1].toSqlUpdate()
+    except ValueError:
+        exceptionThrown = True
+    assert exceptionThrown
