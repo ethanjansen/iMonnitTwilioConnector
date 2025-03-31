@@ -13,6 +13,11 @@ from twilio.rest import Client as TwilioClient
 
 
 class TwilioSMSClient:
+    class ClientReturn:
+        def __init__(self, nothingSent: bool, messages: Message):
+            self.nothingSent = nothingSent
+            self.messages = messages
+
     def __init__(self, logger: str = None, debug: str = TwilioConfig.Debug):
         # logging
         self._logger = logger
@@ -45,7 +50,8 @@ class TwilioSMSClient:
 
         if not body:
             self._logger.error("Message body cannot be empty!")
-            return (True, messages)
+            return TwilioSMSClient.ClientReturn(nothingSent=True,
+                                                messages=messages)
         self._logger.info("Sending SMS with Twilio")
 
         # Send Loop
@@ -100,7 +106,8 @@ class TwilioSMSClient:
             self._logger.warning("Unable to send anything with Twilio. Likely throttled, no valid recipients, or invalid from number.")
             nothingSent = True
 
-        return (nothingSent, messages)
+        return TwilioSMSClient.ClientReturn(nothingSent=nothingSent,
+                                            messages=messages)
 
 
 if __name__ == "__main__":
@@ -113,26 +120,28 @@ if __name__ == "__main__":
 
     # messages sent successfully
     returnVal = TestClient.send("Testing...")
-    assert not returnVal[0]
+    assert not returnVal.nothingSent
 
     # None message body not sent successfully
     returnVal = TestClient.send(None)
-    assert returnVal[0]
+    assert returnVal.nothingSent
 
     # one message failed to send, rest sent successfully
     TestClient.recipientList.append("+1aaabbbcccc")
     returnVal = TestClient.send("Testing...")
     TestClient.recipientList.pop()
-    assert not returnVal[0]
+    assert not returnVal.nothingSent
+    assert returnVal.messages[-1].recipient == "+1aaabbbcccc"  # message should be added to end of list
 
     # one message failed to send (because of Validation error), rest sent successfully
     TestClient.recipientList.append("aaa")
     returnVal = TestClient.send("Testing...")
     TestClient.recipientList.pop()
-    assert not returnVal[0]
+    assert not returnVal.nothingSent
+    assert returnVal.messages[-1].recipient != "aaa"  # message should not be added due to ValidationError
 
     # invalid from address; all messages failed to send
     TestClient.from_ = "+1aaabbbcccc"
     returnVal = TestClient.send("Testing...")
     TestClient.from_ = source
-    assert returnVal[0]
+    assert returnVal.nothingSent
