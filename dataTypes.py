@@ -143,6 +143,18 @@ class Event(BaseModel):
 
     @computed_field
     @property
+    def messageBody(self) -> str:
+        dtString = ""
+        if self.triggeredDT:
+            dtString = self.triggeredDT.strftime("%Y-%m-%d %H:%M")
+
+        return f"""{self.rule} triggered by {self.name} ({self.deviceID})
+Time: {dtString}
+Reading: {self.reading}
+Acknowledge: {self.acknowledgeURL}"""
+
+    @computed_field
+    @property
     def messageCount(self) -> int:
         return len(self.messages)
 
@@ -362,6 +374,10 @@ if __name__ == '__main__':
 
     # test normal usage
     testEventDT = datetime(2022, 4, 28, 14, 21)
+    testOutputEventMsgBody = """Battery below 50% triggered by IOT Gateway - 56789 (56789)
+Time: 2022-04-28 14:21
+Reading: Battery: 10%
+Acknowledge: https://staging.imonnit.com/Ack/1234"""
     testInputEvent = {
         "subject": "Battery below 50%!",
         "reading": "Battery: 10%",
@@ -400,6 +416,7 @@ if __name__ == '__main__':
         "accountNumber": "Example-Company",
         "companyName": "Example Company",
         "created": None,
+        "messageBody": testOutputEventMsgBody,
         "messageCount": 3
         }
     testOutputMsg1 = {
@@ -515,6 +532,7 @@ if __name__ == '__main__':
 
     TestEvent.setAllEventId(1)
 
+    assert TestEvent.messageBody == testOutputEventMsgBody
     assert TestEvent.messageCount == 3
 
     assert TestEvent.model_dump() == testOutputEvent
