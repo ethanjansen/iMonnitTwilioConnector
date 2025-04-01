@@ -8,7 +8,7 @@ RUN mkdir -p /app/src \
 COPY ./requirements.txt /app/build/
 RUN apk add --no-cache --virtual .build-deps gcc musl-dev mariadb-connector-c-dev \
   && pip install --no-cache-dir -r /app/build/requirements.txt \
-  && apk add --no-cache --virtual .runtime-deps mariadb-connector-c
+  && apk add --no-cache --virtual .runtime-deps mariadb-connector-c curl
 
 # Setup app - use docker-compose to mount app src volume, set environment variables, and expose desired port
 VOLUME /app/src

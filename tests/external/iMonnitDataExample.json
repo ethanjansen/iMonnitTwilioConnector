@@ -1,0 +1,21 @@
+{
+    "subject": "Test subject",
+    "reading": "Battery: 10%",
+    "rule": "Test",
+    "date": "2022-4-28",
+    "time": "14:21",
+    "readingDate": "2022-4-28",
+    "readingTime": "14:20",
+    "originalReadingDate": "2022-4-27",
+    "originalReadingTime": "14:20",
+    "originalReading": "Battery: 20%",
+    "acknowledgeURL": "https://staging.imonnit.com/Ack/1234",
+    "parentAccount": "",
+    "deviceID": "56789",
+    "name": "Everything good",
+    "networkID": "4567",
+    "network": "Test Network",
+    "accountID": "123456",
+    "accountNumber": "Example Account",
+    "companyName": "Example Company"
+}
