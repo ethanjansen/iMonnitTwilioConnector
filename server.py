@@ -70,7 +70,7 @@ def webhook():
     app.logger.info("iMonnit webhook POST received")
 
     data = request.json
-    sendTwilio = twilioClient.recipientListLength >= 0
+    sendTwilio = twilioClient.recipientListLength > 0
 
     try:
         # parse/validate event data
@@ -83,23 +83,26 @@ def webhook():
             twilioReturn = twilioClient.send(event.messageBody)
             event.messages = twilioReturn.messages
 
+            # check if twilio was able to send messages.
+            # Note: if nothing could be sent when it should have,
+            # nothing will be added to db and return status will inform client to retry later (hopefully)
+            if twilioReturn.nothingSent:
+                # all messages (if present) should have errors if nothingSent
+                errorString = "Sending messages to recipients resulted in errors:"
+                for msg in twilioReturn.messages:
+                    errorString += f"\n{msg.errorMessage} {msg.errorCode}"
+                return (errorString, 500)  # InternalServerError
+
         # add to db
         if not dbConnector.addEventWithMessages(event):
-            return ("Unable to add event details to db", 500)
+            return ("Unable to add event details to db", 500)  # InternalServerError
 
         # do nothing further if no sms recipients
         if not sendTwilio:
             app.logger.info("No SMS recipients")
-            return ("", 200)
+            return ("", 200)  # OK
 
-        # check if twilio was able to send messages
-        if twilioReturn and twilioReturn.nothingSent:
-            # all messages (if present) should have errors if nothingSent
-            errorString = "Sending messages to recipients resulted in errors:"
-            for msg in twilioReturn.messages:
-                errorString += f"{msg.errorMessage} {msg.errorCode}"
-            return (errorString, 500)
-
+    # other exceptions handled by flask default handler
     except ValidationError as e:
         if sendTwilio:
             # These are not saved to db, nor checked for twilio errors
@@ -108,7 +111,7 @@ def webhook():
         return ("Unexpected Data", 400)  # BadRequest
 
     # Return success -  atLEAST ONE sms was sent successfully and info added to db
-    return ("", 200)
+    return ("", 200)  # OK
 
 
 # Run
