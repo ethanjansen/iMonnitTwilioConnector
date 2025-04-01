@@ -2,16 +2,19 @@
 # By: Ethan Jansen
 # Websocket server for iMonnit--sends text with Twilio. Requires Basic Authorization.
 
-from flask import Flask, request, jsonify
-from werkzeug.exceptions import ServiceUnavailable, InternalServerError, BadRequest
+from flask import Flask, request
 import logging
 from functools import wraps
 from settings import AppName, ImonnitTwilioConnectorConfig
 from twilioClient import TwilioSMSClient
+from dataTypes import Event, ValidationError
+from db import DbConnector
+import sys
 
 # Register app
 app = Flask(AppName)
 twilioClient = TwilioSMSClient()
+dbConnector = DbConnector()
 
 
 # Helper functions
@@ -39,15 +42,12 @@ def login_required(f):
 @app.post("/webhook")
 @login_required
 def webhook():
-    # Log
-    app.logger.info(f"Data received: {request.json}")
-
     """
     Expected iMonnit Rule Webhook Contents:
     {
         subject: Subject/Title of Rule
         reading: Reading or event that triggered the Rule
-        rule: Name of Rule
+        rule: Name of Rule (REQUIRED)
         date: Date the rule triggered
         time: Time the rule triggered
         readingDate: Date of data message (if rule triggered by sensor reading)
@@ -65,46 +65,60 @@ def webhook():
         companyName: Company name of the account the rule belongs to
     }
     """
+
+    # Log
+    app.logger.info("iMonnit webhook POST received")
+
     data = request.json
+    sendTwilio = twilioClient.recipientListLength >= 0
 
-    # Optionally add to database [TODO]
+    try:
+        # parse/validate event data
+        event = Event(**data)
+        app.logger.info(f"Rule: {event.rule}")
 
-    # If there are no sms recipients, do nothing
-    if twilioClient.recipientListLength == 0:
-        app.logger.info("No SMS Recipients")
-        return ("", 200)
+        # send Twilio messages
+        twilioReturn = None
+        if sendTwilio:
+            twilioReturn = twilioClient.send(event.messageBody)
+            event.messages = twilioReturn.messages
 
-    # Send stuff with Twilio
-    body = "Error: Received bad data from iMonnit Webhook!"
-    if "rule" in data:
-        rule = data["rule"]
-        name = data.get("name", "name")
-        deviceID = data.get("deviceID", "deviceID")
-        time = data.get("time", "time")
-        date = data.get("date", "date")
-        reading = data.get("reading", "reading")
-        ack = data.get("acknowledgeURL", "acknowledgeURL")
+        # add to db
+        if not dbConnector.addEventWithMessages(event):
+            return ("Unable to add event details to db", 500)
 
-        body = f"""{rule} triggered by {name} ({deviceID})
-Time: {time} {date}
-Reading: {reading}
-Acknowledge: {ack}"""
-    else:
-        twilioClient.send(body)
-        app.logger.warning("Received bad data from iMonnit Webhook")
-        raise BadRequest(description="Unexpected data")
+        # do nothing further if no sms recipients
+        if not sendTwilio:
+            app.logger.info("No SMS recipients")
+            return ("", 200)
 
-    results = twilioClient.send(body)
+        # check if twilio was able to send messages
+        if twilioReturn and twilioReturn.nothingSent:
+            # all messages (if present) should have errors if nothingSent
+            errorString = "Sending messages to recipients resulted in errors:"
+            for msg in twilioReturn.messages:
+                errorString += f"{msg.errorMessage} {msg.errorCode}"
+            return (errorString, 500)
 
-    if len(results) == twilioClient.recipientListLength:
-        # Nothing was sent - likely throttled
-        raise ServiceUnavailable(description="\n".join(f"Recipient={x[0]}, Error={x[1]} {x[2]}" for x in results))
+    except ValidationError as e:
+        if sendTwilio:
+            # These are not saved to db, nor checked for twilio errors
+            twilioClient.send("Error: Received bad data from iMonnit Webhook!")
+        app.logger.error(f"Received bad data from iMonnit Webhook: {e.errors()}")
+        return ("Unexpected Data", 400)  # BadRequest
 
-    # Return success - This atLEAST ONE sms was sent successfully
-    return ("Success", 200)
+    # Return success -  atLEAST ONE sms was sent successfully and info added to db
+    return ("", 200)
 
 
 # Run
 if __name__ == "__main__":
     app.logger.setLevel(logging.INFO)
+
+    # test database connection
+    if not dbConnector.testConnection():
+        app.logger.critical("Unable to connect to database! Exiting...")
+        sys.exit(2)
+
+    # run app
     app.run(host="0.0.0.0", port=ImonnitTwilioConnectorConfig.ServerPort)
