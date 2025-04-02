@@ -1,7 +1,11 @@
+# dataTypes.py
+# By: Ethan Jansen
+# data class with pydantic validation for webhooks
+
+from datetime import datetime
+from pydantic import BaseModel, BeforeValidator, computed_field, Field, ValidationError
 from typing import List, Tuple, TypeAlias
 from typing_extensions import Annotated
-from pydantic import BaseModel, Field, computed_field, BeforeValidator, ValidationError
-from datetime import datetime
 
 
 def _emptyStrToNone(s: str | None) -> None:

@@ -1,47 +1,25 @@
-# server.py
+# webhook.py
 # By: Ethan Jansen
-# Websocket server for iMonnit--sends text with Twilio. Requires Basic Authorization.
+# Webhooks for flask server.
+# imonnit: Websocket server for iMonnit--sends text with Twilio. Requires Basic Authorization.
 
-from flask import Flask, request
+from flask import Blueprint, request
 import logging
-from functools import wraps
-from settings import AppName, ImonnitTwilioConnectorConfig
-from twilioClient import TwilioSMSClient
-from dataTypes import Event, ValidationError
-from db import DbConnector
-import sys
-
-# Register app
-app = Flask(AppName)
-twilioClient = TwilioSMSClient()
-dbConnector = DbConnector()
+from . import dbConn, smsClient
+from .auth import login_required
+from .dataTypes import Event, ValidationError
 
 
-# Helper functions
-# Authentication check
-def checkAuth(username, password):
-    userCheck = username == ImonnitTwilioConnectorConfig.WebhookUser
-    passCheck = password == ImonnitTwilioConnectorConfig.WebhookPassword
-
-    return userCheck and passCheck
-
-
-# Authentication wrapper
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        auth = request.authorization
-        if not (auth and checkAuth(auth.username, auth.password)):
-            return ("Unauthorized", 401, {"WWW-Authenticate": 'Basic realm="Login Required"'})
-
-        return f(*args, **kwargs)
-    return decorated_function
+# create blueprint
+bpName = "webhook"
+webhookBp = Blueprint(bpName, __name__, url_prefix="/"+bpName)
+logger = logging.getLogger(__name__)
 
 
 # Routes
-@app.post("/webhook")
+@webhookBp.post("/imonnit")
 @login_required
-def webhook():
+def imonnit():
     """
     Expected iMonnit Rule Webhook Contents:
     {
@@ -67,20 +45,20 @@ def webhook():
     """
 
     # Log
-    app.logger.info("iMonnit webhook POST received")
+    logger.info("iMonnit webhook POST received")
 
     data = request.json
-    sendTwilio = twilioClient.recipientListLength > 0
+    sendTwilio = smsClient.recipientListLength > 0
 
     try:
         # parse/validate event data
         event = Event(**data)
-        app.logger.info(f"Rule: {event.rule}")
+        logger.info(f"Rule: {event.rule}")
 
         # send Twilio messages
         twilioReturn = None
         if sendTwilio:
-            twilioReturn = twilioClient.send(event.messageBody)
+            twilioReturn = smsClient.send(event.messageBody)
             event.messages = twilioReturn.messages
 
             # check if twilio was able to send messages.
@@ -93,34 +71,21 @@ def webhook():
                 return (errorString, 500)  # InternalServerError
 
         # add to db
-        if not dbConnector.addEventWithMessages(event):
+        if not dbConn.addEventWithMessages(event):
             return ("Unable to add event details to db", 500)  # InternalServerError
 
         # do nothing further if no sms recipients
         if not sendTwilio:
-            app.logger.info("No SMS recipients")
+            logger.info("No SMS recipients")
             return ("", 200)  # OK
 
     # other exceptions handled by flask default handler
     except ValidationError as e:
         if sendTwilio:
             # These are not saved to db, nor checked for twilio errors
-            twilioClient.send("Error: Received bad data from iMonnit Webhook!")
-        app.logger.error(f"Received bad data from iMonnit Webhook: {e.errors()}")
+            smsClient.send("Error: Received bad data from iMonnit Webhook!")
+        logger.error(f"Received bad data from iMonnit Webhook: {e.errors()}")
         return ("Unexpected Data", 400)  # BadRequest
 
     # Return success -  atLEAST ONE sms was sent successfully and info added to db
     return ("", 200)  # OK
-
-
-# Run
-if __name__ == "__main__":
-    app.logger.setLevel(logging.INFO)
-
-    # test database connection
-    if not dbConnector.testConnection():
-        app.logger.critical("Unable to connect to database! Exiting...")
-        sys.exit(2)
-
-    # run app
-    app.run(host="0.0.0.0", port=ImonnitTwilioConnectorConfig.ServerPort)

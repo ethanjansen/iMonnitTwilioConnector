@@ -4,8 +4,8 @@
 
 import logging
 import mariadb
-from settings import AppName, DbConfig
-from dataTypes import Event, Message
+from .dataTypes import Event, Message
+from .settings import DbConfig
 # testing
 from datetime import datetime
 import sys
@@ -31,7 +31,7 @@ class DbConnector:
         self._connection = None
         self._cursor = None
 
-        self._logger = logging.getLogger(AppName+"."+__name__)
+        self._logger = logging.getLogger(__name__)
 
     def __del__(self):
         self._disconnect()

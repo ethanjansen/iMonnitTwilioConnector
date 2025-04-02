@@ -3,13 +3,12 @@
 # Twilio Client
 
 import logging
-from settings import AppName, TwilioConfig
-from dataTypes import Message
-from pydantic import ValidationError
-from typing import List, Tuple
 from twilio.base.exceptions import TwilioRestException
 from twilio.http.http_client import TwilioHttpClient
 from twilio.rest import Client as TwilioClient
+from typing import List, Tuple
+from .settings import TwilioConfig
+from .dataTypes import Message, ValidationError
 
 
 class TwilioSMSClient:
@@ -22,7 +21,7 @@ class TwilioSMSClient:
         # logging
         self._logger = logger
         if not self._logger:
-            self._logger = logging.getLogger(AppName+"."+__name__)
+            self._logger = logging.getLogger(__name__)
         self._httpLog = logging.getLogger(self._logger.name+".httpclient")
         self._httpLog.setLevel(20 if debug else 30)
 

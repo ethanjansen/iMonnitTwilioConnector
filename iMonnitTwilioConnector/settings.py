@@ -4,18 +4,16 @@
 
 from flask.logging import default_handler
 import logging
-from os import environ
+from os import environ, urandom
 import sys
 
-# Used for flask app name & logger
-AppName = "iMonnitTwilioConnector"
 
 # Logging Config
-appLog = logging.getLogger(AppName)
+appLog = logging.getLogger(__package__)
 default_handler.setFormatter(logging.Formatter("[%(asctime)s] %(levelname)s in %(name)s: %(message)s"))
 appLog.addHandler(default_handler)
 appLog.setLevel(logging.INFO)
-SettingsLog = logging.getLogger(AppName+"."+__name__)
+SettingsLog = logging.getLogger(__name__)
 
 
 # Settings exception handler
@@ -36,7 +34,7 @@ class ImonnitTwilioConnectorConfig:
         errorHandler(e)
 
     # Optional Settings
-    ServerPort = environ.get("IMONNIT_TWILIO_CONNECTOR_PORT", 5080)
+    ServerSecret = environ.get("IMONNIT_TWILIO_CONNECTOR_SECRET", urandom(24))
 
 
 class TwilioConfig:
