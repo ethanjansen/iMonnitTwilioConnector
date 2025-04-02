@@ -14,7 +14,9 @@
  - Requires HTTP Basic Auth
 
 ## Testing:
- - Start a separate docker container (different ports) and run [tests/external/test.sh](server/tests/external/test.sh) to test full stack. Make sure to rename and set [test environment variables](server/tests/external/defaultTesting.env-example) accordingly.
+ - Start a separate docker container (different ports) and run [tests/external/test.sh](server/tests/external/test.sh) to test full stack: `sudo docker run --network imonnittwilioconnector_default -v /<project root>/server/tests:/server/tests server:latest /server/tests/external/test.sh`
+    - Make sure to rename and set [test environment variables](server/tests/external/defaultTesting.env-example) accordingly.
+    - Also ensure database is running.
  - Individual unit tests can be run by executing python files such as: [dataTypes](server/iMonnitTwilioConnector/dataTypes.py), [db.py](server/iMonnitTwilioConnector/db.py), and [twilioClient.py](server/iMonnitTwilioConnector/twilioClient.py).
 
 ## Access internal database:
