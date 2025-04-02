@@ -189,7 +189,8 @@ backgroundApp
 testAppReturn 2
 
 # Test 3. No credentials
-# Test 4. No rule (invalid post data) and no recipients
+# Test 4. No rule (invalid post data, valid json) and no recipients
+# Test 4.5. Invalid post data, invalid json and no recipients
 # Test 5. No recipients
 setupEnv
 unset TWILIO_PHONE_RCPTS
@@ -198,6 +199,16 @@ echo "[TEST] Testing no POST credentials..."
 curlPost "" "Unauthorized" 401
 echo "[TEST] Testing invalid data without recipients..."
 curlPostWithAuth '{"blah":"blah"}' "Unexpected Data" 400
+echo "[TEST] Testing invalid json without recipients..."
+test4_5ExpectedString="$(cat <<EOF
+<!doctype html>
+<html lang=en>
+<title>400 Bad Request</title>
+<h1>Bad Request</h1>
+<p>The browser (or proxy) sent a request that this server could not understand.</p>
+EOF
+)"
+curlPostWithAuth "" "$test4_5ExpectedString" 400
 echo "[TEST] Testing no recipients..."
 # should add to db: INSERT INTO Event (Rule, Device, MessageNumber) VALUES ("Test", "no recipients", 0);
 curlPostWithAuth '{"rule":"Test", "name":"no recipients"}' "" 200
