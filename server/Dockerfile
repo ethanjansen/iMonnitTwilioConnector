@@ -11,11 +11,11 @@ RUN apk add --no-cache --virtual .build-deps gcc musl-dev mariadb-connector-c-de
   && pip install --no-cache-dir /server/dist/imonnittwilioconnector-1.0.1-py3-none-any.whl \
   && apk add --no-cache --virtual .runtime-deps mariadb-connector-c curl \
   && apk del .build-deps \
-  && rm -rf /server/iMonnitTwilioConnector /server/dist /server/LICENSE /server/pyproject.toml /server/README.md \
+  && rm -rf /server/iMonnitTwilioConnector /server/dist /server/LICENSE /server/pyproject.toml /server/README.md /server/.dockerignore \
   && mkdir /server/tests
 
 # Setup server - use docker-compose to mount server tests volume, set environment variables, and expose desired port
 VOLUME /server/tests
 WORKDIR /server
 ENTRYPOINT ["/bin/sh", "-c"]
-CMD ["startServer.sh"]
+CMD ["/server/startServer.sh"]
