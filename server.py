@@ -88,9 +88,8 @@ def webhook():
             # nothing will be added to db and return status will inform client to retry later (hopefully)
             if twilioReturn.nothingSent:
                 # all messages (if present) should have errors if nothingSent
-                errorString = "Sending messages to recipients resulted in errors:"
-                for msg in twilioReturn.messages:
-                    errorString += f"\n{msg.errorMessage} {msg.errorCode}"
+                errorString = "Sending Twilio messages resulted in errors: "
+                errorString += ", ".join([str(x.errorCode) for x in twilioReturn.messages])
                 return (errorString, 500)  # InternalServerError
 
         # add to db

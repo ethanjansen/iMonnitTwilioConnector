@@ -199,7 +199,7 @@ curlPost "" "Unauthorized" 401
 echo "[TEST] Testing invalid data without recipients..."
 curlPostWithAuth '{"blah":"blah"}' "Unexpected Data" 400
 echo "[TEST] Testing no recipients..."
-# should add to db: INSERT INTO EVENT (Rule, Device, MessageNumber) VALUES ("Test", "no recipients", 0);
+# should add to db: INSERT INTO Event (Rule, Device, MessageNumber) VALUES ("Test", "no recipients", 0);
 curlPostWithAuth '{"rule":"Test", "name":"no recipients"}' "" 200
 killApp
 
@@ -216,13 +216,7 @@ setupEnv
 export TWILIO_PHONE_SRC="+1aaabbbcccc"
 backgroundApp
 echo "[TEST] Testing bad Twilio from number..."
-expectedData=$(cat <<EOF
-Sending messages to recipients resulted in errors:
-Unable to create record: Invalid From Number (caller ID): +1aaabbbcccc 400
-Unable to create record: Invalid 'To' Phone Number: +1aaabbbXXXX 400
-EOF
-)
-curlPostWithAuth '{"rule":"Test", "name":"bad from number"}' "$expectedData" 500
+curlPostWithAuth '{"rule":"Test", "name":"bad from number"}' "Sending Twilio messages resulted in errors: 400, 400" 500
 killApp
 
 # Test 8. Everything good
@@ -230,11 +224,13 @@ setupEnv
 export TWILIO_PHONE_RCPTS="+18777804236"
 backgroundApp
 echo "[TEST] Testing everything good..."
-# should add to db: INSERT INTO EVENT (Rule, Subject, DeviceId, Device, Reading, TriggeredDT, ReadingDT, OriginalReadingDT,
+# should add to db: INSERT INTO Event (Rule, Subject, DeviceId, Device, Reading, TriggeredDT, ReadingDT, OriginalReadingDT,
 #                   AcknowledgeUrl, MessageNumber, ParentAccount, NetworkId, Network, AccountId, AccountNumber, CompanyName)
 #                   VALUES ("Test", "Test subject", 56789, "Everything good", "Battery: 10%", 2022-04-28 14:21:00,
 #                   2022-04-28 14:20:00, 2022-04-27 14:20:00, "https://staging.imonnit.com/Ack/1234", 1, NULL, 4567,
 #                   "Test Network", 123456, "Example Account", "Example Company")
+# should add to db: INSERT INTO Message (EventId, MessageId, Recipient, Status) VALUES (<matching above event id>, <SMxxxx...>,
+#                   "+18777804236", "queued")
 # should send sms with twilio: "Test triggered by Everything good (56789)
 #                               Time: 2022-04-28 14:21
 #                               Reading: Battery: 10%
