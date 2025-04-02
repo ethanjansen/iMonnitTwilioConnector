@@ -1,0 +1,28 @@
+[project]
+name = "iMonnitTwilioConnector"
+version = "1.0.0"
+authors = [
+  { name="Ethan Jansen" },
+]
+description = "A server to host an iMonnit rule webhook, sending notifications via Twilio"
+readme = "./README.md"
+requires-python = ">=3.11.0, < 3.12"
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["./LICENSE"]
+dependencies = [
+  "Flask",
+  "mariadb",
+  "pydantic",
+  "twilio",
+]
+
+[build-system]
+requires = ["flit_core<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.sdist]
+include = ["./iMonnitTwilioConnector/*"]
