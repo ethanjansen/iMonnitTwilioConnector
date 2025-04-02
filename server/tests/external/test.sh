@@ -12,9 +12,8 @@
 
 
 # Global vars:
-serverPath="/app/iMonnitTwilioConnector"
-testScriptPath="/app/tests/external"
-route="http://localhost:${IMONNIT_TWILIO_CONNECTOR_PORT}/webhook/imonnit"
+testScriptPath="/server/tests/external"
+routePath="webhook/imonnit"
 
 serverPID=
 
@@ -90,7 +89,7 @@ curlPost(){
                      -X POST \
                      -H "Content-Type: application/json" \
                      -d "$1" \
-                     "$route"
+                     "http://localhost:${IMONNIT_TWILIO_CONNECTOR_PORT}/$routePath"
                     )" "$2" "$3"
 }
 
@@ -103,7 +102,7 @@ curlPostWithAuth(){
                    -H "Content-Type: application/json" \
                    -u "$IMONNIT_TWILIO_CONNECTOR_WH_USER:$IMONNIT_TWILIO_CONNECTOR_WH_PASS" \
                    -d "$1" \
-                   "$route"
+                   "http://localhost:${IMONNIT_TWILIO_CONNECTOR_PORT}/$routePath"
                   )" "$2" "$3"
 }
 
@@ -123,7 +122,7 @@ checkState(){
 # Runs server.py in background. Sets global serverPID
 backgroundApp(){
   if ! checkState; then
-    (flask --app "$serverPath" run --host localhost --port "$IMONNIT_TWILIO_CONNECTOR_PORT") &
+    (waitress-serve --listen "localhost:$IMONNIT_TWILIO_CONNECTOR_PORT" --no-ipv6 --call "iMonnitTwilioConnector:create_app") &
     serverPID=$!
     sleep 3
   fi

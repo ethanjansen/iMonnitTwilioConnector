@@ -9,6 +9,7 @@ import sys
 
 
 # Logging Config
+logging.getLogger().addHandler(logging.NullHandler())
 appLog = logging.getLogger(__package__)
 default_handler.setFormatter(logging.Formatter("[%(asctime)s] %(levelname)s in %(name)s: %(message)s"))
 appLog.addHandler(default_handler)
