@@ -14,16 +14,21 @@ def _emptyStrToNone(s: str | None) -> None:
     raise ValueError("Value is not empty")
 
 
+# Tries all formatStrings in iterator order, returns results of the first not to raise ValueError
 class _customDTValidator:
-    def __init__(self, formatString: str):
-        self.formatString = formatString
+    def __init__(self, formatStrings: List[str]):
+        self.formatStrings = formatStrings
 
     def validate(self, dt: str | datetime) -> datetime:
         # validate after _emptyStrToNone. dt cannot be None or ""
         if isinstance(dt, datetime):
             return dt
         elif isinstance(dt, str):
-            return datetime.strptime(dt, self.formatString).astimezone().replace(tzinfo=None)
+            for formatString in self.formatStrings:
+                try:
+                    return datetime.strptime(dt, formatString).astimezone().replace(tzinfo=None)
+                except ValueError:
+                    pass
         raise TypeError("dt is not string or datetime")
 
 
@@ -49,11 +54,11 @@ NullableInt = EmptyStrToNone | int
 NullableUnsignedInt = EmptyStrToNone | Annotated[int, Field(gt=0)]
 NullableDT = EmptyStrToNone | datetime
 NullableFancyDTEvent = EmptyStrToNone | Annotated[datetime,
-                                                  BeforeValidator(_customDTValidator("%Y-%m-%d %H:%M").validate)]
+                                                  BeforeValidator(_customDTValidator(["%m/%d/%Y %I:%M %p", "%Y-%m-%d %H:%M"]).validate)]
 NullableFancyDTMessageSent = EmptyStrToNone | Annotated[datetime,
-                                                        BeforeValidator(_customDTValidator("%a, %d %b %Y %H:%M:%S %z").validate)]
+                                                        BeforeValidator(_customDTValidator(["%a, %d %b %Y %H:%M:%S %z"]).validate)]
 NullableFancyDTMessageDelivered = EmptyStrToNone | Annotated[datetime,
-                                                             BeforeValidator(_customDTValidator("%y%m%d%H%M").validate)]
+                                                             BeforeValidator(_customDTValidator(["%y%m%d%H%M"]).validate)]
 
 
 class Message(BaseModel):  # this may not match keys of callback
@@ -289,6 +294,12 @@ if __name__ == '__main__':
     assert DTEvent.triggeredDT == datetime(2025, 3, 28, 14, 25)
     assert DTEvent.readingDT is None
     assert DTEvent.originalReadingDT is None
+
+    # event: allow for different DT format (iMonnit example is different from actual data, we will accept both)
+    DTEvent2 = Event(rule="rule",
+                     time="2:25 PM",
+                     date="03/28/2025")
+    assert DTEvent2.triggeredDT == datetime(2025, 3, 28, 14, 25)
 
     # message: no recipient
     exceptionThrown = False
