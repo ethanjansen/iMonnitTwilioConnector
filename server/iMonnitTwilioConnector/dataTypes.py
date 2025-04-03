@@ -29,6 +29,7 @@ class _customDTValidator:
                     return datetime.strptime(dt, formatString).astimezone().replace(tzinfo=None)
                 except ValueError:
                     pass
+            raise ValueError("Unable to parse dt string")
         raise TypeError("dt is not string or datetime")
 
 
