@@ -7,6 +7,31 @@ x-global-env: &global-env
   MYSQL_TCP_PORT: 3306
 
 services:
+  server:
+    container_name: imonnitTwilioConnector-server
+    image: imonnittwilioconnector-server
+    build: ./server
+    pull_policy: never
+    environment:
+      <<: *global-env
+      IMONNIT_TWILIO_CONNECTOR_WH_USER: Hello         # ChangeMe
+      IMONNIT_TWILIO_CONNECTOR_WH_PASS: World         # ChangeMe
+      IMONNIT_TWILIO_CONNECTOR_PORT: 5080
+
+      TWILIO_ACCOUNT_SID: ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX  # ChangeMe
+      TWILIO_AUTH_TOKEN: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX     # ChangeMe
+      TWILIO_PHONE_SRC: +1aaabbbcccc                          # ChangeMe
+      TWILIO_PHONE_RCPTS: +18777804236,+1aaabbbcccc           # ChangeMe (csv of E.164 SMS numbers)
+#     TWILIO_DEBUG:                                   # Uncomment to add Twilio debug messages to server log 
+    expose:  # Match to IMONNIT_TWILIO_CONNECTOR_PORT
+      - "5080/tcp"
+    ports:
+      - "5080:5080/tcp"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: on-failure:3
+
   db:
     container_name: imonnitTwilioConnector-db
     image: mariadb:11.4.5-noble
@@ -25,6 +50,12 @@ services:
         target: /docker-entrypoint-initdb.d/dbInit.sql
       - source: dbConfig
         target: /etc/mysql/conf.d/dbConfig.cnf
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 10s
+      interval: 20s
+      timeout: 10s
+      retries: 3
     restart: on-failure:3
 
 configs:
