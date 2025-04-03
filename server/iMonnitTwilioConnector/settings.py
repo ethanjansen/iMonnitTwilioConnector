@@ -64,4 +64,4 @@ class DbConfig:
         errorHandler(e)
 
     # Optional Settings
-    Port = environ.get("MYSQL_TCP_PORT", 3306)
+    Port = int(environ.get("MYSQL_TCP_PORT", "3306"))

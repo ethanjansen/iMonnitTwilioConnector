@@ -143,7 +143,7 @@ killApp(){
 testAppReturn(){
   if checkState; then
     echo "[TEST] Server still running. Waiting..."
-    sleep 15
+    sleep 45  # increase delay for added db connection retries
     
     if checkState; then
       echo "[TEST] TEST FAILED: server did not exit."
