@@ -5,8 +5,10 @@
 ## Setup:
  - Sign up for Twilio and go to the [Console](https://www.twilio.com/console) to get auth_token and account_sid. Also purchase a Twilio phone number for phone_src.
  - Set environment variables and exposed ports in [compose.yml](compose.yml)
- - Start docker swarm with `docker compose up -d` from the project folder
- - Log in to [iMonnit](https://www.imonnit.com/API/) and create a rule webhook. Specify server and configure basic authentication. Finally, add rules to rule webhook.
+ - Start docker swarm with `sudo docker compose up -d` from the project folder.
+    - To start with included Nginx reverse proxy run with: `sudo docker compose --profile with_local_proxy up -d`
+        - Ensure that `IMONNIT_TWILOI_CONNECTOR_PORT`, `IMONNIT_TWILIO_CONNECTOR_HOSTNAME` are specified or else nginx will not run. Also ensure `IMONNIT_TWILIO_CONNECTOR_USE_HTTPS="true"`.
+ - Log in to [iMonnit](https://www.imonnit.com/API/) and create a rule webhook. Specify server and configure basic authentication. Finally, add rules to rule webhook via "server action".
  
 ## Usage:
  - iMonnit webhook listens to `https://<domain>/webhook/imonnit`

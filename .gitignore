@@ -2,3 +2,5 @@ server/dist/
 __pycache__/
 db/data/
 compose-prod.yml
+proxy/secrets/
+proxy/nginx/*.conf

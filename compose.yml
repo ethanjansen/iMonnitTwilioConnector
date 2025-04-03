@@ -1,10 +1,13 @@
 name: imonnitTwilioConnector
 
-x-global-env: &global-env
+x-common-db-env: &common-db-env
   MARIADB_USER: userWhatever            # ChangeMe
   MARIADB_PASSWORD: userWhateverPass    # ChangeMe
   MARIADB_DATABASE: dbTest              # ChangeMe
   MYSQL_TCP_PORT: 3306
+x-common-server-env: &common-server-env
+  IMONNIT_TWILIO_CONNECTOR_PORT: 5080
+  IMONNIT_TWILIO_CONNECTOR_HOSTNAME: test.example.comg     # ChangeMe -- currently unused in server
 
 services:
   server:
@@ -13,33 +16,34 @@ services:
     build: ./server
     pull_policy: never
     environment:
-      <<: *global-env
+      <<: [*common-db-env, *common-server-env]
       IMONNIT_TWILIO_CONNECTOR_WH_USER: Hello         # ChangeMe
       IMONNIT_TWILIO_CONNECTOR_WH_PASS: World         # ChangeMe
-      IMONNIT_TWILIO_CONNECTOR_PORT: 5080
 
       TWILIO_ACCOUNT_SID: ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX  # ChangeMe
       TWILIO_AUTH_TOKEN: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX     # ChangeMe
       TWILIO_PHONE_SRC: +1aaabbbcccc                          # ChangeMe
       TWILIO_PHONE_RCPTS: +18777804236,+1aaabbbcccc           # ChangeMe (csv of E.164 SMS numbers)
-#     TWILIO_DEBUG:                                   # Uncomment to add Twilio debug messages to server log 
+#     TWILIO_DEBUG: "true"                                    # Uncomment to add Twilio debug messages to server log 
+
+      IMONNIT_TWILIO_CONNECTOR_USE_HTTPS: "true"
     expose:  # Match to IMONNIT_TWILIO_CONNECTOR_PORT
       - "5080/tcp"
-    ports:
+    ports:    # Comment out section if external access is undesired
       - "5080:5080/tcp"
     depends_on:
       db:
         condition: service_healthy
-    restart: on-failure:3
+    restart: unless-stopped
 
   db:
     container_name: imonnitTwilioConnector-db
     image: mariadb:11.4.5-noble
     environment:
-      <<: *global-env
+      <<: *common-db-env
       MARIADB_ROOT_PASSWORD: rootPassWhatever   # ChangeMe
       MARIADB_ROOT_HOST: localhost
-    expose:
+    expose:  # Match to MYSQL_TCP_PORT
       - "3306/tcp"
 #   ports:      # Uncomment if external access is desired
 #     - "3306/tcp"
@@ -56,11 +60,29 @@ services:
       interval: 20s
       timeout: 10s
       retries: 3
-    restart: on-failure:3
+    restart: unless-stopped
+
+  # Run with docker compose --profile with_local_proxy up -d
+  proxy:
+    container_name: imonnitTwilioConnector-proxy
+    image: jonasal/nginx-certbot:5.4.1-alpine
+    command: ["/bin/bash", "-c", "/scripts/customCmd.sh"]
+    environment:
+      <<: *common-server-env
+      CERTBOT_EMAIL: example@example.com          # ChangeMe
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./proxy/secrets:/etc/letsencrypt
+      - ./proxy/nginx:/etc/nginx/user_conf.d
+      - ./proxy/customCmd.sh:/scripts/customCmd.sh
+    restart: unless-stopped
+    profiles:
+      - with_local_proxy
 
 configs:
   dbInit:
     file: ./db/dbInit.sql
   dbConfig:
     file: ./db/dbConfig.cnf
-
