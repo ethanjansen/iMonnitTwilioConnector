@@ -1,6 +1,6 @@
 server/dist/
 __pycache__/
 db/data/
-compose-prod.yml
+compose-prod*.yml
 proxy/secrets/
 proxy/nginx/*.conf
