@@ -23,8 +23,8 @@ services:
       TWILIO_ACCOUNT_SID: ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX  # ChangeMe
       TWILIO_API_SID: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX     # ChangeMe
       TWILIO_API_SECRET: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX   # ChangeMe
-      TWILIO_PHONE_SRC: +1aaabbbcccc                          # ChangeMe
-      TWILIO_PHONE_RCPTS: +18777804236,+1aaabbbcccc           # ChangeMe (csv of E.164 SMS numbers)
+      TWILIO_PHONE_SRC: "+1aaabbbcccc"                          # ChangeMe - quotes required
+      TWILIO_PHONE_RCPTS: "+18777804236,+1aaabbbcccc"           # ChangeMe (csv of E.164 SMS numbers) - quotes required
 #     TWILIO_DEBUG: "true"                                    # Uncomment to add Twilio debug messages to server log 
 
       IMONNIT_TWILIO_CONNECTOR_USE_HTTPS: "true"
