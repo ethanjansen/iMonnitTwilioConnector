@@ -1,9 +1,9 @@
 # iMonnitTwilioConnector
-## A Python server to host an iMonnit rule webhook, sending notifications via Twilio. Also logs events and sent messages to interal database.
+## A Python server to host an iMonnit rule webhook, sending notifications via Twilio. Also logs events and sent messages to internal database.
 ### By: Ethan Jansen
 
 ## Setup:
- - Sign up for Twilio and go to the [Console](https://www.twilio.com/console) to get auth_token and account_sid. Also purchase a Twilio phone number for phone_src.
+ - Sign up for Twilio and go to the [Console](https://www.twilio.com/console) to get account_sid. [Create an API key](https://console.twilio.com/us1/account/keys-credentials/api-keys) and save the key sid and secret. Also purchase a Twilio phone number for phone_src.
  - Set environment variables and exposed ports in [compose.yml](compose.yml)
  - Start docker swarm with `sudo docker compose up -d` from the project folder.
     - To start with included Nginx reverse proxy run with: `sudo docker compose --profile with_local_proxy up -d`

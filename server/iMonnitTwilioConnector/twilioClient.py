@@ -26,8 +26,10 @@ class TwilioSMSClient:
         self._httpLog.setLevel(20 if debug else 30)
 
         # client config
-        # expects TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN environment variables
-        self._client = TwilioClient(http_client=TwilioHttpClient(logger=self._httpLog))
+        self._client = TwilioClient(username=TwilioConfig.ApiSid,
+                                    password=TwilioConfig.ApiSecret,
+                                    account_sid=TwilioConfig.AccountSid,
+                                    http_client=TwilioHttpClient(logger=self._httpLog))
 
         # to/from
         self.from_ = TwilioConfig.PhoneSource

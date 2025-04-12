@@ -41,8 +41,9 @@ class ImonnitTwilioConnectorConfig:
 class TwilioConfig:
     # Required Settings
     try:
-        # AccoundSID = # accessed directly
-        # AuthToken = # accessed directly
+        AccountSid = environ["TWILIO_ACCOUNT_SID"]
+        ApiSid = environ["TWILIO_API_SID"]
+        ApiSecret = environ["TWILIO_API_SECRET"]
         PhoneSource = environ["TWILIO_PHONE_SRC"]
     except Exception as e:
         errorHandler(e)
