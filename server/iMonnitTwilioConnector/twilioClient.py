@@ -2,6 +2,7 @@
 # By: Ethan Jansen
 # Twilio Client
 
+from json import load as jsonLoad
 import logging
 from twilio.base.exceptions import TwilioRestException
 from twilio.http.http_client import TwilioHttpClient
@@ -10,6 +11,9 @@ from typing import List, Tuple
 from .settings import TwilioConfig, ImonnitTwilioConnectorConfig
 from .dataTypes import Message, ValidationError
 
+# logging setup
+defaultLog = logging.getLogger(__name__)
+
 
 class TwilioSMSClient:
     class ClientReturn:
@@ -17,11 +21,11 @@ class TwilioSMSClient:
             self.nothingSent = nothingSent
             self.messages = messages
 
-    def __init__(self, logger: str = None, debug: str = TwilioConfig.Debug):
+    def __init__(self, logger: str = None, debug: str = TwilioConfig.Debug, useCallback: str = TwilioConfig.UseCallback):
         # logging
         self._logger = logger
         if not self._logger:
-            self._logger = logging.getLogger(__name__)
+            self._logger = defaultLog
         self._httpLog = logging.getLogger(self._logger.name+".httpclient")
         self._httpLog.setLevel(20 if debug else 30)
 
@@ -37,10 +41,11 @@ class TwilioSMSClient:
 
         # callback url
         self.callbackUrl = None
-        if TwilioConfig.UseCallback:
+        if useCallback:
             self.callbackUrl = (f"https://{ImonnitTwilioConnectorConfig.WebhookUser}:"
                                 f"{ImonnitTwilioConnectorConfig.WebhookPassword}@"
                                 f"{ImonnitTwilioConnectorConfig.Hostname}/webhook/twilio")
+            self._logger.info(f"Using Twilio status callbacks.")
 
     # Get recipient list length
     @property
@@ -117,6 +122,24 @@ class TwilioSMSClient:
 
         return TwilioSMSClient.ClientReturn(nothingSent=nothingSent,
                                             messages=messages)
+
+
+class TwilioErrorCodes:
+    filePath = TwilioConfig.ErrorCodeFile
+
+    @classmethod
+    def getError(cls, e: int | str) -> str | None:
+        try:
+            with open(cls.filePath, "r") as f:
+                return next(item["message"] for item in jsonLoad(f) if item["code"] == int(e))
+        except FileNotFoundError:
+            defaultLog.warning(f"Twilio error code dictionary not found at {cls.filePath}")
+            return None
+        except StopIteration:
+            return None
+        except Exception as e:
+            defaultLog.error(f"Unexpected error when retrieving error message: {e}")
+            return None
 
 
 if __name__ == "__main__":

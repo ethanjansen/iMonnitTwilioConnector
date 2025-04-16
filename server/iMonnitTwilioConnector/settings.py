@@ -52,6 +52,7 @@ class TwilioConfig:
     # Optional Settings
     Recipients = list(filter(None, environ.get("TWILIO_PHONE_RCPTS", "").split(",")))
     UseCallback = "TWILIO_CALLBACK" in environ and environ["TWILIO_CALLBACK"] != "false"
+    ErrorCodeFile = environ.get("TWILIO_ERROR_DICTIONARY_FILE", "/server/twilio-error-codes.json")
     Debug = "TWILIO_DEBUG" in environ and environ["TWILIO_DEBUG"] != "false"  # INFO if set, WARN if unset
 
 

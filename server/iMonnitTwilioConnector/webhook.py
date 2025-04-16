@@ -3,11 +3,13 @@
 # Webhooks for flask server.
 # imonnit: Websocket server for iMonnit--sends text with Twilio. Requires Basic Authorization.
 
+from datetime import datetime
 from flask import Blueprint, request
 import logging
 from . import dbConn, smsClient
 from .auth import login_required
 from .dataTypes import Event, Message, ValidationError
+from .twilioClient import TwilioErrorCodes
 
 
 # create blueprint
@@ -121,17 +123,26 @@ def twilio():
     # Twilio uses x-www-form-urlencoded
     data = request.form.to_dict()
 
-    # Testing
-    logger.info(f"Received: {data}")
-
     try:
-        # Testing
-        return ("", 200)
+        # get addtional info if necessary
+        sentDT = None
+        errorMessage = None
+        if data.get("MessageStatus") == "sent":
+            # UTC
+            sentDT = datetime.now()
+        if "ErrorCode" in data:
+            errorMessage = TwilioErrorCodes.getError(data["ErrorCode"])
 
-        msg = Message(**data)
+        # receive message details
+        msg = Message(messageId=data.get("MessageSid"),
+                      recipient=data.get("To"),
+                      status=data.get("MessageStatus"),
+                      sentDT=sentDT,
+                      deliveredDT=data.get("RawDlrDoneDate"),
+                      errorCode=data.get("ErrorCode"),
+                      errorMessage=errorMessage,
+                      updated=datetime.now())
         logger.info(f"Message: {msg.messageId}")
-
-        # add stuff to msg TODO
 
         # update db
         if not dbConn.updateMessage(msg):
