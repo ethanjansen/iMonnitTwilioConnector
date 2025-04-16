@@ -7,7 +7,7 @@ from twilio.base.exceptions import TwilioRestException
 from twilio.http.http_client import TwilioHttpClient
 from twilio.rest import Client as TwilioClient
 from typing import List, Tuple
-from .settings import TwilioConfig
+from .settings import TwilioConfig, ImonnitTwilioConnectorConfig
 from .dataTypes import Message, ValidationError
 
 
@@ -34,6 +34,13 @@ class TwilioSMSClient:
         # to/from
         self.from_ = TwilioConfig.PhoneSource
         self.recipientList = TwilioConfig.Recipients
+
+        # callback url
+        self.callbackUrl = None
+        if TwilioConfig.UseCallback:
+            self.callbackUrl = (f"https://{ImonnitTwilioConnectorConfig.WebhookUser}:"
+                                f"{ImonnitTwilioConnectorConfig.WebhookPassword}@"
+                                f"{ImonnitTwilioConnectorConfig.Hostname}/webhook/twilio")
 
     # Get recipient list length
     @property
@@ -64,7 +71,8 @@ class TwilioSMSClient:
                 # send message
                 msg = self._client.messages.create(from_=self.from_,
                                                    to=recipient,
-                                                   body=body)
+                                                   body=body,
+                                                   status_callback=self.callbackUrl)
                 """
                 sid - unique twilio message id
                 status - status of message (queued, sending, sent, failed, delivered, undelivered, receiving, received)

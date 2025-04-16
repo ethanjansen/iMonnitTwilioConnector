@@ -31,6 +31,7 @@ class ImonnitTwilioConnectorConfig:
     try:
         WebhookUser = environ["IMONNIT_TWILIO_CONNECTOR_WH_USER"]
         WebhookPassword = environ["IMONNIT_TWILIO_CONNECTOR_WH_PASS"]
+        Hostname = environ["IMONNIT_TWILIO_CONNECTOR_HOSTNAME"]
     except KeyError as e:
         errorHandler(e)
 
@@ -50,7 +51,8 @@ class TwilioConfig:
 
     # Optional Settings
     Recipients = list(filter(None, environ.get("TWILIO_PHONE_RCPTS", "").split(",")))
-    Debug = "TWILIO_DEBUG" in environ  # INFO if set, WARN if unset
+    UseCallback = "TWILIO_CALLBACK" in environ and environ["TWILIO_CALLBACK"] != "false"
+    Debug = "TWILIO_DEBUG" in environ and environ["TWILIO_DEBUG"] != "false"  # INFO if set, WARN if unset
 
 
 class DbConfig:

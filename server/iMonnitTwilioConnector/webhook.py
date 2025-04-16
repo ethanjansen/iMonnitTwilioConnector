@@ -7,7 +7,7 @@ from flask import Blueprint, request
 import logging
 from . import dbConn, smsClient
 from .auth import login_required
-from .dataTypes import Event, ValidationError
+from .dataTypes import Event, Message, ValidationError
 
 
 # create blueprint
@@ -47,6 +47,7 @@ def imonnit():
     # Log
     logger.info("iMonnit webhook POST received")
 
+    # iMonnit uses json
     data = request.json
     sendTwilio = smsClient.recipientListLength > 0
 
@@ -89,3 +90,56 @@ def imonnit():
 
     # Return success -  atLEAST ONE sms was sent successfully and info added to db
     return ("", 200)  # OK
+
+
+@webhookBp.post("/twilio")
+@login_required
+def twilio():
+    """
+    Expected Twilio SMS Status callback data:
+    {
+        MessageSid: message id (Message.messageId)
+        From: the phone number that sent the message
+        To: the phone number of the recipient (Message.recipient)
+        Body: text body of the message: Up to 1600 characters
+        MessageStatus: status of the message resource at the time the status callback was sent (Message.status)
+        ErrorCode: if an error occured (MessageStatus is failed or undelivered), additional information (Message.errorCode)
+        RawDlrDoneDate: The done date included in the delivery receipt (MessageStatus is delivered) (Message.deliveredDT)
+    }
+
+    Might need to add additional information:
+    {
+        Message.sentDT: DT for MessageStatus == sent
+        Messge.errorMessage: Twilio error message associated with ErrorCode
+        Message.updated: DT webhook was received
+    }
+    """
+
+    # Log
+    logger.info("Twilio webhook POST received")
+
+    # Twilio uses x-www-form-urlencoded
+    data = request.form.to_dict()
+
+    # Testing
+    logger.info(f"Received: {data}")
+
+    try:
+        # Testing
+        return ("", 200)
+
+        msg = Message(**data)
+        logger.info(f"Message: {msg.messageId}")
+
+        # add stuff to msg TODO
+
+        # update db
+        if not dbConn.updateMessage(msg):
+            return ("Unable to update db with message callback", 500)  # InternalServerError
+    except ValidationError as e:
+        # This is not logged to db
+        logger.error(f"Received bad data from Twilio Webhook: {e.errors()}")
+        return ("Unexpected Data", 400)  # BadRequest
+
+    # Return success
+    return ("", 200)
