@@ -13,7 +13,8 @@
 
 # Global vars:
 testScriptPath="/server/tests/external"
-routePath="webhook/imonnit"
+routePathImonnit="webhook/imonnit"
+routePathTwilio="/webhook/twilio"
 
 serverPID=
 
@@ -82,28 +83,39 @@ curlPost_helper(){
 }
 
 
-# Posts data $1 to localhost:$IMONNIT_TWILIO_CONNECTOR_PORT and checks return data $2 and return code $3
+# Posts data $1 to localhost:$IMONNIT_TWILIO_CONNECTOR_PORT/$2 where $2 is routePath, and checks return data $3 and return code $4
+# Tests all endpoints with application/json content-type despite Twilio using x-www-form-urlencoded
 curlPost(){
+  dataType="Content-Type: application/json"
+  if [ "$2" = "$routePathTwilio" ]; then
+    dataType="Content-Type: application/x-www-form-urlencoded"
+  fi
+
   curlPost_helper "$(curl -s \
                      -w "\n%{response_code}" \
                      -X POST \
                      -H "Content-Type: application/json" \
                      -d "$1" \
-                     "http://localhost:${IMONNIT_TWILIO_CONNECTOR_PORT}/$routePath"
-                    )" "$2" "$3"
+                     "http://localhost:${IMONNIT_TWILIO_CONNECTOR_PORT}/${2}"
+                    )" "$3" "$4"
 }
 
 
 # same as curlPost(), but with basic auth using $IMONNIT_TWILIO_CONNECTOR_WH_USER:$IMONNIT_TWILIO_CONNECTOR_WH_PASS
 curlPostWithAuth(){
+  dataType="Content-Type: application/json"
+  if [ "$2" = "$routePathTwilio" ]; then
+    dataType="Content-Type: application/x-www-form-urlencoded"
+  fi
+
   curlPost_helper "$(curl -s \
                    -w "\n%{response_code}" \
                    -X POST \
-                   -H "Content-Type: application/json" \
+                   -H "$dataType" \
                    -u "$IMONNIT_TWILIO_CONNECTOR_WH_USER:$IMONNIT_TWILIO_CONNECTOR_WH_PASS" \
                    -d "$1" \
-                   "http://localhost:${IMONNIT_TWILIO_CONNECTOR_PORT}/$routePath"
-                  )" "$2" "$3"
+                   "http://localhost:${IMONNIT_TWILIO_CONNECTOR_PORT}/${2}"
+                  )" "$3" "$4"
 }
 
 
@@ -196,9 +208,9 @@ setupEnv
 unset TWILIO_PHONE_RCPTS
 backgroundApp
 echo "[TEST] Testing no POST credentials..."
-curlPost "" "Unauthorized" 401
+curlPost "" "$routePathImonnit" "Unauthorized" 401
 echo "[TEST] Testing invalid data without recipients..."
-curlPostWithAuth '{"blah":"blah"}' "Unexpected Data" 400
+curlPostWithAuth '{"blah":"blah"}' "$routePathImonnit" "Unexpected Data" 400
 echo "[TEST] Testing invalid json without recipients..."
 test4_5ExpectedString="$(cat <<EOF
 <!doctype html>
@@ -208,10 +220,10 @@ test4_5ExpectedString="$(cat <<EOF
 <p>The browser (or proxy) sent a request that this server could not understand.</p>
 EOF
 )"
-curlPostWithAuth "" "$test4_5ExpectedString" 400
+curlPostWithAuth "" "$routePathImonnit" "$test4_5ExpectedString" 400
 echo "[TEST] Testing no recipients..."
 # should add to db: INSERT INTO Event (Rule, Device, MessageNumber) VALUES ("Test", "no recipients", 0);
-curlPostWithAuth '{"rule":"Test", "name":"no recipients"}' "" 200
+curlPostWithAuth '{"rule":"Test", "name":"no recipients"}' "$routePathImonnit" "" 200
 killApp
 
 # Test 6. No rule (invalid post data) with "good" recipients
@@ -219,7 +231,7 @@ setupEnv
 backgroundApp
 echo "[TEST] Testing invalid data with recipients..."
 # Should send sms with twilio: "Error: Received bad data from iMonnit Webhook!"
-curlPostWithAuth '{"blah":"blah"}' "Unexpected Data" 400
+curlPostWithAuth '{"blah":"blah"}' "$routePathImonnit" "Unexpected Data" 400
 killApp
 
 # Test 7. "Good" recipients but bad from number
@@ -227,7 +239,7 @@ setupEnv
 export TWILIO_PHONE_SRC="+1aaabbbcccc"
 backgroundApp
 echo "[TEST] Testing bad Twilio from number..."
-curlPostWithAuth '{"rule":"Test", "name":"bad from number"}' "Sending Twilio messages resulted in errors: 400, 400" 500
+curlPostWithAuth '{"rule":"Test", "name":"bad from number"}' "$routePathImonnit" "Sending Twilio messages resulted in errors: 400, 400" 500
 killApp
 
 # Test 8. Everything good
@@ -246,8 +258,24 @@ echo "[TEST] Testing everything good..."
 #                               Time: 2022-04-28 14:21
 #                               Reading: Battery: 10%
 #                               Acknowledge: https://staging.imonnit.com/Ack/1234"
-curlPostWithAuth "@${testScriptPath}/iMonnitDataExample.json" "" "200"
+curlPostWithAuth "@${testScriptPath}/iMonnitDataExample.json" "$routePathImonnit" "" "200"
 killApp
+
+# Test 9. Twilio status callback - no credentials
+# Test 10. Twilio status callback - no To number (invalid data)
+# Test 11. Twilio status callback - no matching MessageSid
+# Unable to test successful update, MessageId in db are unknown
+setupEnv
+backgroundApp
+echo "[TEST] Testing Twilio status callback - no POST credentials"
+curlPost "" "$routePathTwilio" "Unauthorized" 401
+echo "[TEST] Testing Twilio status callback - invalid data"
+curlPostWithAuth "blah=blah" "$routePathTwilio" "Unexpected Data" 400
+echo "[TEST] Testing Twilio status callback - no matching MessageSID, cannot add to db"
+curlPostWithAuth "To=%2b18777804236&MessageSid=SMXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" "$routePathTwilio" "Unable to update db with message callback" 500
+killApp
+
+# Not adding tests that require server to be publicly available (such as successful Twilio status callback)
 
 # Cleanup
 restoreEnv

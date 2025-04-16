@@ -45,7 +45,7 @@ class TwilioSMSClient:
             self.callbackUrl = (f"https://{ImonnitTwilioConnectorConfig.WebhookUser}:"
                                 f"{ImonnitTwilioConnectorConfig.WebhookPassword}@"
                                 f"{ImonnitTwilioConnectorConfig.Hostname}/webhook/twilio")
-            self._logger.info(f"Using Twilio status callbacks.")
+            self._logger.info("Using Twilio status callbacks.")
 
     # Get recipient list length
     @property
@@ -144,7 +144,9 @@ class TwilioErrorCodes:
 
 if __name__ == "__main__":
     # testing - assumes good config from settings.TwilioConfig
-    TestClient = TwilioSMSClient(debug=True)
+
+    # TwilioSMSClient
+    TestClient = TwilioSMSClient(debug=True, useCallback=False)
     recipients = TestClient.recipientList.copy()
     source = TestClient.from_
 
@@ -177,3 +179,14 @@ if __name__ == "__main__":
     returnVal = TestClient.send("Testing...")
     TestClient.from_ = source
     assert returnVal.nothingSent
+
+    # TwilioErrorCodes - assumes valid json filePath
+    assert TwilioErrorCodes.getError(None) is None
+    assert TwilioErrorCodes.getError(20006) == "Access Denied"
+    assert TwilioErrorCodes.getError("20006") == "Access Denied"
+    assert TwilioErrorCodes.getError("aaa") is None  # to int conversion fails
+    assert TwilioErrorCodes.getError(999999) is None  # invalid error code
+
+    # invalid json filePath
+    TwilioErrorCodes.filePath = "/dev/null"
+    assert TwilioErrorCodes.getError(20006) is None
