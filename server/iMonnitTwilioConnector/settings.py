@@ -58,8 +58,6 @@ class TwilioConfig:
 
 class DbConfig:
     # Required Settings
-    Host = "imonnitTwilioConnector-db"
-
     try:
         User = environ["MARIADB_USER"]
         Password = environ["MARIADB_PASSWORD"]
@@ -68,4 +66,5 @@ class DbConfig:
         errorHandler(e)
 
     # Optional Settings
+    Host = environ.get("MYSQL_HOSTNAME", "imonnitTwilioConnector-db")
     Port = int(environ.get("MYSQL_TCP_PORT", "3306"))
